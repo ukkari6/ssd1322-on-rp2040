@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdbool.h> 
+
 
 //SSD1322の解像度
 #define SCREEN_WIDTH    256  // SSD1322は最大256px（横）
@@ -43,7 +45,16 @@ void ssd1322_clear_buffer(void);
 // フレームバッファ全体を指定色で塗りつぶす
 void ssd1322_fill_buffer(uint8_t gray);
 
-//フレームバッファをOLEDに書き出す
+//フレームバッファをポーリングで送信（転送終了まで待つので遅い）
 void ssd1322_flush_buffer(void);
+
+//フレームバッファのDMA転送（自動転送で早い）、true = 転送スタート、false = DMA使用中エラー
+bool ssd1322_flush_buffer_dma(void);
+
+
+//DMA完了割り込みハンドラ
+void ssd1322_dma_irq_handler(void);
+
+
 
 #endif // SSD1322_DRIVER_H

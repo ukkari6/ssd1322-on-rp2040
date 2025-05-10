@@ -3,7 +3,12 @@
 #include "hardware/spi.h"
 #include <string.h> // memset
 #include <stdlib.h> // abs
+#include "hardware/dma.h"
+#include <stdio.h>
 
+
+// DMAチャネル取得
+int dma_chan;
 
 // フレームバッファの実体
 uint8_t framebuffer[FRAMEBUFFER_SIZE];
@@ -165,8 +170,9 @@ void ssd1322_fill_buffer(uint8_t gray) {
 
 //フレームバッファをOLEDに書き出す
 void ssd1322_flush_buffer(void) {
-    // GDDRAMは4bit/pixel、2ピクセルで1バイト
-    // Columnは0x1C〜0x5B = 240バイト（480px / 2）
+    //OLED書き込み先アドレスの設定
+    //GDDRAMは4bit/pixel、2ピクセルで1バイト
+    //Columnは0x1C〜0x5B = 240バイト（480px / 2）
     ssd1322_send_cmd(0x15); // Column Address
     ssd1322_send_data((uint8_t[]){0x1C, 0x5B}, 2);
     ssd1322_send_cmd(0x75); // Row Address
@@ -174,4 +180,64 @@ void ssd1322_flush_buffer(void) {
     ssd1322_send_cmd(0x5C); // Write RAM
 
     ssd1322_send_data(framebuffer, FRAMEBUFFER_SIZE);
+}
+
+//フレームバッファのDMA転送（自動転送で早い）、true = 転送スタート、false = DMA使用中エラー
+bool ssd1322_flush_buffer_dma(void) {
+
+    //DMA転送中なら転送せず戻る
+    if (dma_channel_is_busy(dma_chan)) {
+        return false;   //転送エラー
+    }
+
+    //OLED書き込み先アドレスの設定
+    //GDDRAMは4bit/pixel、2ピクセルで1バイト
+    //Columnは0x1C〜0x5B = 240バイト（480px / 2）
+    ssd1322_send_cmd(0x15); // Column Address
+    ssd1322_send_data((uint8_t[]){0x1C, 0x5B}, 2);
+    ssd1322_send_cmd(0x75); // Row Address
+    ssd1322_send_data((uint8_t[]){0x00, 0x3F}, 2); // 64行
+    ssd1322_send_cmd(0x5C); // Write RAM
+
+    gpio_put(PIN_CS, 0);    //OLEDを有効
+    gpio_put(PIN_DC, 1);    //データモード
+
+    // DMAチャネル取得
+    dma_chan = dma_claim_unused_channel(true);
+    dma_channel_config cfg = dma_channel_get_default_config(dma_chan);
+
+    channel_config_set_transfer_data_size(&cfg, DMA_SIZE_8);
+    channel_config_set_dreq(&cfg, spi_get_dreq(SPI_PORT, true));  // SPI TX DREQ
+    channel_config_set_read_increment(&cfg, true);  // フレームバッファ側はインクリメント
+    channel_config_set_write_increment(&cfg, false); // SPI FIFOアドレス固定
+
+    //DMA転送終了後に割り込みを発生させる
+    dma_channel_set_irq0_enabled(dma_chan, true);
+    //DMA_IRQ_0割り込みが発生したらssd1322_dma_irq_handlerを実行させる
+    irq_set_exclusive_handler(DMA_IRQ_0, ssd1322_dma_irq_handler);
+    //割り込みを有効
+    irq_set_enabled(DMA_IRQ_0, true);
+
+    dma_channel_configure(
+        dma_chan, &cfg,
+        &spi_get_hw(SPI_PORT)->dr,  // 書き込み先（SPI FIFO）
+        framebuffer,                       // 読み出し元
+        FRAMEBUFFER_SIZE,                       // バイト数
+        true                        // 即スタート
+    );
+
+    return true;    //転送成功
+}
+
+//DMA転送終了割り込みハンドラ
+void ssd1322_dma_irq_handler(void){
+    //DMA割り込みフラグのクリア
+    dma_hw->ints0 = 1u << dma_chan;
+    //SPI送信が完全に終わるまで待機
+    while (spi_is_busy(SPI_PORT)) {
+        tight_loop_contents();
+    }
+
+    gpio_put(PIN_CS, 1);    //OLEDチップセレクトをハイ
+    dma_channel_unclaim(dma_chan);  //DMAチャンネルの解放
 }

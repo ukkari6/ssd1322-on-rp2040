@@ -66,6 +66,8 @@ target_link_libraries(ssd1322-on-rp2040
         hardware_spi
         hardware_dma
         hardware_pio
+        hardware_irq
+        hardware_timer
         )
 
 pico_add_extra_outputs(ssd1322-on-rp2040)

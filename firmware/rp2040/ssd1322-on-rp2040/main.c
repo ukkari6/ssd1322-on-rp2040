@@ -12,6 +12,7 @@
 #include "hardware/uart.h"
 #include "pico/stdio_uart.h"
 #include <string.h>
+#include <stdbool.h> 
 
 #include "ssd1322_driver.h"
 
@@ -130,15 +131,17 @@ void sine_wave(int cnt){
     for(int k = 0; k < cnt; k++){
         for(float i = 0.0f; i <= 10.0f; i += 0.1f){
             ssd1322_clear_buffer();
-            ssd1322_draw_sine_wave(20.0f, i, 15);  // 振幅20px、周波数2波、白で描画
-            ssd1322_flush_buffer();           // 描画反映
-            sleep_ms(1);
+            ssd1322_draw_sine_wave(20.0f, i, 10);  // 振幅20px、周波数2波、白で描画
+            //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+            ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
+            sleep_ms(500);
         }
         for(float i = 10.0f; i >= 0.0f; i -= 0.1f){
             ssd1322_clear_buffer();
-            ssd1322_draw_sine_wave(20.0f, i, 15);  // 振幅20px、周波数2波、白で描画
-            ssd1322_flush_buffer();           // 描画反映
-            sleep_ms(1);
+            ssd1322_draw_sine_wave(20.0f, i, 10);  // 振幅20px、周波数2波、白で描画
+            //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+            ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
+            sleep_ms(500);
         }
     }
 }
@@ -147,19 +150,23 @@ void sine_wave(int cnt){
 void draw_box_anime(){
     ssd1322_clear_buffer();
     ssd1322_draw_line(0, 0, 255, 0, 10);   // 横線
-    ssd1322_flush_buffer();                  //フレームバッファをOLEDに書き出し
+    //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+    ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
     sleep_ms(500);
 
     ssd1322_draw_line(0, 0, 0, 63, 10);   // 横線
-    ssd1322_flush_buffer();                  //フレームバッファをOLEDに書き出し
+    //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+    ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
     sleep_ms(500);
 
     ssd1322_draw_line(0, 63, 255, 63, 10);   // 横線
-    ssd1322_flush_buffer();                  //フレームバッファをOLEDに書き出し
+    //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+    ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
     sleep_ms(500);
 
     ssd1322_draw_line(255, 0, 255, 63, 10);   // 横線
-    ssd1322_flush_buffer();                  //フレームバッファをOLEDに書き出し
+    //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+    ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
     sleep_ms(500);
 }
 
@@ -170,7 +177,8 @@ void draw_random_dot_anime(){
         uint16_t y = rand() % SCREEN_HEIGHT;   // 0 から SCREEN_HEIGHT-1 の乱数
         uint8_t gray = rand() % 16;          // 0 から 15 の乱数 (グレースケール)
         ssd1322_draw_pixel(x, y, gray);
-        ssd1322_flush_buffer();           // 描画反映
+        //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+        ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
         sleep_ms(10); // 連続で描画する場合はコメントアウトしても良いかもしれません
     }
 }
@@ -204,21 +212,25 @@ int main()
     // フレームバッファ全体を指定色で塗りつぶす
     //void ssd1322_fill_buffer(uint8_t gray);
 
-    //フレームバッファをOLEDに書き出す
-    //void ssd1322_flush_buffer(void);
+    //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
+    //ssd1322_flush_buffer(); 
+
+    //フレームバッファのDMA転送（自動転送で早い）、true = 転送スタート、false = DMA使用中エラー
+    //ssd1322_flush_buffer_dma(); 
 
     gpio_put(LED, 1);   //電源ON
 
     while (true) {
         printf("SSD1322\n");
 
-        sine_wave(2);    //サイン波アニメーションの描画
-        draw_box_anime(); //上下左右にラインを描画するアニメーション
+        //sine_wave(10);    //サイン波アニメーションの描画
+        //draw_box_anime(); //上下左右にラインを描画するアニメーション
         draw_random_dot_anime();    //ドットを乱数で描画
 
         //ssd1322_draw_pixel(255, 0, 15);      // 白ドット
         //ssd1322_draw_pixel(0, 63, 10);       // 中間グレー
         //ssd1322_draw_line(0, 0, 255, 63, 5);   //ラインを引く
         //ssd1322_flush_buffer();           // OLEDに書き出す（draw後は必ずOLEDに書き出すこと）
+        //ssd1322_flush_buffer_dma();            //OLEDにDMAで書き出す
     }
 }
