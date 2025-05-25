@@ -30,12 +30,21 @@ const uint LED = 25; // オンボードLED
 
 //SPIピン（マスター）
 #define SPI_PORT spi0
+/*
 #define PIN_MISO 0      //1pin  データ入力（未使用）
 #define PIN_CS   1      //2pin  チップセレクト
 #define PIN_SCK  2      //4pin  クロック
 #define PIN_MOSI 3      //5pin  データ出力
 #define PIN_DC   4      //6pin  コマンド・データ切り替え 
 #define PIN_RESET 5     //7pin  リセット
+*/
+
+#define PIN_MISO 20      //1pin  データ入力（未使用）
+#define PIN_CS   21      //2pin  チップセレクト
+#define PIN_SCK  18      //4pin  クロック
+#define PIN_MOSI 19      //5pin  データ出力
+#define PIN_DC   26      //6pin  コマンド・データ切り替え 
+#define PIN_RESET 27     //7pin  リセット
 
 
 // UART defines
@@ -134,14 +143,14 @@ void sine_wave(int cnt){
             ssd1322_draw_sine_wave(20.0f, i, 10);  // 振幅20px、周波数2波、白で描画
             //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
             ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
-            sleep_ms(500);
+            sleep_ms(10);
         }
         for(float i = 10.0f; i >= 0.0f; i -= 0.1f){
             ssd1322_clear_buffer();
             ssd1322_draw_sine_wave(20.0f, i, 10);  // 振幅20px、周波数2波、白で描画
             //ssd1322_flush_buffer();       //フレームバッファをポーリングで送信（転送終了まで待つので遅い）
             ssd1322_flush_buffer_dma();     //フレームバッファのDMA転送（自動転送で早い）
-            sleep_ms(500);
+            sleep_ms(10);
         }
     }
 }
@@ -223,8 +232,8 @@ int main()
     while (true) {
         printf("SSD1322\n");
 
-        //sine_wave(10);    //サイン波アニメーションの描画
-        //draw_box_anime(); //上下左右にラインを描画するアニメーション
+        sine_wave(2);    //サイン波アニメーションの描画
+        draw_box_anime(); //上下左右にラインを描画するアニメーション
         draw_random_dot_anime();    //ドットを乱数で描画
 
         //ssd1322_draw_pixel(255, 0, 15);      // 白ドット

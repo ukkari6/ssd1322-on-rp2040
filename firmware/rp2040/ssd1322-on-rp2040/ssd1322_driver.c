@@ -46,9 +46,10 @@ void ssd1322_init() {
     uint8_t unlock = 0x12;
     ssd1322_send_data(&unlock, 1);
     ssd1322_send_cmd(0xAE); // set display off
-    //ssd1322_send_cmd(0xB3); // set display clock divide ratio、画面のチラツキに関するコマンド
+    ssd1322_send_cmd(0xB3); // set display clock divide ratio、画面のチラツキに関するコマンド
     //uint8_t clock_ratio = 0x91;   //OLEDの動画を撮ると画面がチラつくことがあるのでここをもっと早くするべきかも？
-    //ssd1322_send_data(&clock_ratio, 1);
+    uint8_t clock_ratio = 0b10000001;   //iPhoneで60fpsで撮影した時に一番チラツキが少ない設定
+    ssd1322_send_data(&clock_ratio, 1);
     ssd1322_send_cmd(0xCA); // set multiplex ratio
     uint8_t multiplex_ratio = 0x3F; // 64MUX for 64 rows
     ssd1322_send_data(&multiplex_ratio, 1);
@@ -58,8 +59,8 @@ void ssd1322_init() {
     ssd1322_send_cmd(0xA1); // start display start line to 0
     uint8_t start_line = 0x00;
     ssd1322_send_data(&start_line, 1);
-    ssd1322_send_cmd(0xA0); // set remap and dual COM Line Mode
-    uint8_t remap_data[2] = {0x14, 0x11}; // Default: 0x14, 0x11 (for 256x64)
+    ssd1322_send_cmd(0xa0); // set remap and dual com line mode
+    uint8_t remap_data[2] = {0x14, 0x11}; // default: 0x14, 0x11 (for 256x64)
     ssd1322_send_data(remap_data, 2);
     ssd1322_send_cmd(0xB5); // disable IO input
     uint8_t io_disable = 0x00;

@@ -15,12 +15,23 @@
 extern uint8_t framebuffer[FRAMEBUFFER_SIZE];
 
 #define SPI_PORT spi0
+/*
 #define PIN_MISO 0      //1pin  データ入力（未使用想定）
 #define PIN_CS   1      //2pin  チップセレクト
 #define PIN_SCK  2      //4pin  クロック
 #define PIN_MOSI 3      //5pin  データ出力
 #define PIN_DC   4      //6pin  コマンド・データ切り替え (ファイル内でDCだと他と被る可能性があるので変更)
 #define PIN_RESET 5     //7pin  リセット (ファイル内でRESETだと他と被る可能性があるので変更)
+*/
+
+#define PIN_MISO 20      //1pin  データ入力（未使用）
+#define PIN_CS   21      //2pin  チップセレクト
+#define PIN_SCK  18      //4pin  クロック
+#define PIN_MOSI 19      //5pin  データ出力
+#define PIN_DC   26      //6pin  コマンド・データ切り替え 
+#define PIN_RESET 27     //7pin  リセット
+
+
 
 //SSD1322 通信用関数
 void ssd1322_send_cmd(uint8_t cmd);
